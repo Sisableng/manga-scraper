@@ -39,6 +39,7 @@ export interface MangaDetails {
 
 export interface ChapterInfo {
   chapterNumber: string;
+  chapterId?: string;
   chapterTitle?: string;
   chapterUrl: string;
   releaseDate?: string;

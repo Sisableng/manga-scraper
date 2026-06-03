@@ -1,8 +1,9 @@
-import { httpClient } from '../utils/httpClient';
-import { MangaExtractor } from '../extractors/mangaExtractor';
-import { ChapterExtractor } from '../extractors/chapterExtractor';
-import { logger } from '../utils/logger';
-import { config } from '../config/config';
+import * as cheerio from "cheerio";
+import { httpClient } from "../utils/httpClient";
+import { MangaExtractor } from "../extractors/mangaExtractor";
+import { ChapterExtractor } from "../extractors/chapterExtractor";
+import { logger } from "../utils/logger";
+import { config } from "../config/config";
 import {
   HomepageData,
   MangaDetails,
@@ -10,26 +11,26 @@ import {
   SearchResult,
   MangaCard,
   ChapterCard,
-  NewsItem
-} from '../types';
+  NewsItem,
+} from "../types";
 
 export class ScraperService {
   /**
    * Get homepage data
    */
   async getHomepage(): Promise<HomepageData> {
-    logger.info('Fetching homepage');
-    const $ = await httpClient.fetchPage('/');
-    
+    logger.info("Fetching homepage");
+    const $ = await httpClient.fetchPage("/");
+
     if (!$) {
-      throw new Error('Failed to fetch homepage');
+      throw new Error("Failed to fetch homepage");
     }
 
     return {
       featuredChapters: this.parseFeaturedChapters($),
       newChapters: this.parseNewChapters($),
       trendingManga: this.parseTrendingManga($),
-      latestNews: this.parseLatestNews($)
+      latestNews: this.parseLatestNews($),
     };
   }
 
@@ -38,12 +39,16 @@ export class ScraperService {
    */
   private parseFeaturedChapters($: cheerio.CheerioAPI): ChapterCard[] {
     const chapters: ChapterCard[] = [];
-    
-    $('h4').each((_, elem) => {
+
+    $("h4").each((_, elem) => {
       const text = $(elem).text();
-      if (text.includes('Featured')) {
+      if (text.includes("Featured")) {
         const container = $(elem).next();
-        const extracted = ChapterExtractor.extractChapterCards($, container.find('a[href*="/chapters/"]'));
+        const extracted = ChapterExtractor.extractChapterCards(
+          $,
+          'a[href*="/chapters/"]',
+          container,
+        );
         chapters.push(...extracted);
       }
     });
@@ -56,12 +61,16 @@ export class ScraperService {
    */
   private parseNewChapters($: cheerio.CheerioAPI): ChapterCard[] {
     const chapters: ChapterCard[] = [];
-    
-    $('h4').each((_, elem) => {
+
+    $("h4").each((_, elem) => {
       const text = $(elem).text();
-      if (text.includes('New Chapters')) {
+      if (text.includes("New Chapters")) {
         const container = $(elem).next();
-        const extracted = ChapterExtractor.extractChapterCards($, container.find('a[href*="/chapters/"]'));
+        const extracted = ChapterExtractor.extractChapterCards(
+          $,
+          'a[href*="/chapters/"]',
+          container,
+        );
         chapters.push(...extracted);
       }
     });
@@ -74,12 +83,16 @@ export class ScraperService {
    */
   private parseTrendingManga($: cheerio.CheerioAPI): MangaCard[] {
     const manga: MangaCard[] = [];
-    
-    $('h4').each((_, elem) => {
+
+    $("h4").each((_, elem) => {
       const text = $(elem).text();
-      if (text.includes('Trending')) {
+      if (text.includes("Trending")) {
         const container = $(elem).next();
-        const extracted = MangaExtractor.extractMangaCards($, container.find('a[href*="/manga/"]'));
+        const extracted = MangaExtractor.extractMangaCards(
+          $,
+          'a[href*="/manga/"]',
+          container,
+        );
         manga.push(...extracted);
       }
     });
@@ -92,16 +105,16 @@ export class ScraperService {
    */
   private parseLatestNews($: cheerio.CheerioAPI): NewsItem[] {
     const news: NewsItem[] = [];
-    
-    $('h4').each((_, elem) => {
+
+    $("h4").each((_, elem) => {
       const text = $(elem).text();
-      if (text.includes('Latest News')) {
+      if (text.includes("Latest News")) {
         const container = $(elem).next();
         container.find('a[href*="/news/"]').each((_, newsElem) => {
           const $news = $(newsElem);
           news.push({
             title: $news.text().trim(),
-            url: config.baseURL + $news.attr('href')
+            url: config.baseURL + $news.attr("href"),
           });
         });
       }
@@ -117,12 +130,12 @@ export class ScraperService {
     logger.info(`Fetching manga details for ID: ${mangaId}`);
     const url = `/manga/${mangaId}`;
     const $ = await httpClient.fetchPage(url);
-    
+
     if (!$) return null;
 
     try {
       // Extract basic info
-      const title = $('h1').first().text().trim();
+      const title = $("h1").first().text().trim();
       if (!title) return null;
 
       const alternativeTitles = MangaExtractor.extractAlternativeTitles($);
@@ -131,12 +144,12 @@ export class ScraperService {
       const genres = MangaExtractor.extractGenres($);
 
       // Extract metadata
-      const type = MangaExtractor.extractMetadata($, 'Type');
-      const year = MangaExtractor.extractMetadata($, 'Year');
-      const status = MangaExtractor.extractMetadata($, 'Status');
-      const rating = MangaExtractor.extractMetadata($, 'Rating');
-      const author = MangaExtractor.extractListMetadata($, 'Author');
-      const artist = MangaExtractor.extractListMetadata($, 'Artist');
+      const type = MangaExtractor.extractMetadata($, "Type");
+      const year = MangaExtractor.extractMetadata($, "Year");
+      const status = MangaExtractor.extractMetadata($, "Status");
+      const rating = MangaExtractor.extractMetadata($, "Rating");
+      const author = MangaExtractor.extractListMetadata($, "Author");
+      const artist = MangaExtractor.extractListMetadata($, "Artist");
 
       // Extract chapters
       const chapters = ChapterExtractor.extractChapterList($);
@@ -144,7 +157,8 @@ export class ScraperService {
       return {
         id: mangaId,
         title,
-        alternativeTitles: alternativeTitles.length > 0 ? alternativeTitles : undefined,
+        alternativeTitles:
+          alternativeTitles.length > 0 ? alternativeTitles : undefined,
         imageUrl,
         description,
         type,
@@ -154,7 +168,7 @@ export class ScraperService {
         artist: artist.length > 0 ? artist : undefined,
         genres: genres.length > 0 ? genres : undefined,
         rating,
-        chapters
+        chapters,
       };
     } catch (error) {
       logger.error(`Error parsing manga details for ID ${mangaId}:`, error);
@@ -169,19 +183,21 @@ export class ScraperService {
     logger.info(`Fetching chapter pages for ID: ${chapterId}`);
     const url = `/chapters/${chapterId}`;
     const $ = await httpClient.fetchPage(url);
-    
+
     if (!$) return null;
 
     try {
       // Get manga info
       const mangaLink = $('a[href*="/manga/"]').first();
       const mangaTitle = mangaLink.text().trim();
-      const mangaUrl = config.baseURL + mangaLink.attr('href');
+      const mangaUrl = config.baseURL + mangaLink.attr("href");
 
       // Get chapter info
       const chapterTitle = ChapterExtractor.extractChapterTitle($);
       const chapterMatch = chapterTitle?.match(/chapter\s*(\d+(?:\.\d+)?)/i);
-      const chapterNumber = chapterMatch ? chapterMatch[1] : chapterId.split('-').pop() || 'Unknown';
+      const chapterNumber = chapterMatch
+        ? chapterMatch[1]
+        : chapterId.split("-").pop() || "Unknown";
 
       // Get navigation
       const navigation = ChapterExtractor.extractNavigation($);
@@ -197,7 +213,7 @@ export class ScraperService {
         mangaUrl,
         pages,
         previousChapter: navigation.prev,
-        nextChapter: navigation.next
+        nextChapter: navigation.next,
       };
     } catch (error) {
       logger.error(`Error parsing chapter pages for ID ${chapterId}:`, error);
@@ -212,22 +228,24 @@ export class ScraperService {
     logger.info(`Searching for: ${query} (page ${page})`);
     const url = `/search?q=${encodeURIComponent(query)}&page=${page}`;
     const $ = await httpClient.fetchPage(url);
-    
+
     if (!$) {
-      throw new Error('Failed to perform search');
+      throw new Error("Failed to perform search");
     }
 
     const results = MangaExtractor.extractMangaCards($);
-    
+
     // Try to get pagination info
-    const totalResults = parseInt($('.total-results, .result-count').text().match(/\d+/)?.[0] || '0');
-    const totalPages = parseInt($('.pagination a').last().text() || '1');
+    const totalResults = parseInt(
+      $(".total-results, .result-count").text().match(/\d+/)?.[0] || "0",
+    );
+    const totalPages = parseInt($(".pagination a").last().text() || "1");
 
     return {
       results,
       totalResults: totalResults || undefined,
       currentPage: page,
-      totalPages: totalPages || undefined
+      totalPages: totalPages || undefined,
     };
   }
 
@@ -238,18 +256,18 @@ export class ScraperService {
     logger.info(`Fetching new manga (page ${page})`);
     const url = `/mangas/new?page=${page}`;
     const $ = await httpClient.fetchPage(url);
-    
+
     if (!$) {
-      throw new Error('Failed to fetch new manga');
+      throw new Error("Failed to fetch new manga");
     }
 
     const results = MangaExtractor.extractMangaCards($);
-    const totalPages = parseInt($('.pagination a').last().text() || '1');
+    const totalPages = parseInt($(".pagination a").last().text() || "1");
 
     return {
       results,
       currentPage: page,
-      totalPages: totalPages || undefined
+      totalPages: totalPages || undefined,
     };
   }
 
@@ -260,9 +278,9 @@ export class ScraperService {
     logger.info(`Fetching recent chapters (page ${page})`);
     const url = `/chapters?page=${page}`;
     const $ = await httpClient.fetchPage(url);
-    
+
     if (!$) {
-      throw new Error('Failed to fetch recent chapters');
+      throw new Error("Failed to fetch recent chapters");
     }
 
     return ChapterExtractor.extractChapterCards($);
@@ -275,18 +293,18 @@ export class ScraperService {
     logger.info(`Searching by genre: ${genre} (page ${page})`);
     const url = `/search?genre=${encodeURIComponent(genre)}&page=${page}`;
     const $ = await httpClient.fetchPage(url);
-    
+
     if (!$) {
-      throw new Error('Failed to search by genre');
+      throw new Error("Failed to search by genre");
     }
 
     const results = MangaExtractor.extractMangaCards($);
-    const totalPages = parseInt($('.pagination a').last().text() || '1');
+    const totalPages = parseInt($(".pagination a").last().text() || "1");
 
     return {
       results,
       currentPage: page,
-      totalPages: totalPages || undefined
+      totalPages: totalPages || undefined,
     };
   }
 
@@ -294,10 +312,10 @@ export class ScraperService {
    * Get random manga
    */
   async getRandomManga(): Promise<MangaCard | null> {
-    logger.info('Fetching random manga');
-    const url = '/mangas/random';
+    logger.info("Fetching random manga");
+    const url = "/mangas/random";
     const $ = await httpClient.fetchPage(url, false); // Don't cache random
-    
+
     if (!$) return null;
 
     const mangaLink = $('a[href*="/manga/"]').first();
@@ -317,31 +335,32 @@ export class ScraperService {
     year?: string;
     page?: number;
   }): Promise<SearchResult> {
-    logger.info('Performing advanced search', params);
-    
+    logger.info("Performing advanced search", params);
+
     const searchParams = new URLSearchParams();
-    
-    if (params.query) searchParams.append('q', params.query);
-    if (params.genres) params.genres.forEach(g => searchParams.append('genre', g));
-    if (params.type) searchParams.append('type', params.type);
-    if (params.status) searchParams.append('status', params.status);
-    if (params.year) searchParams.append('year', params.year);
-    searchParams.append('page', (params.page || 1).toString());
+
+    if (params.query) searchParams.append("q", params.query);
+    if (params.genres)
+      params.genres.forEach((g) => searchParams.append("genre", g));
+    if (params.type) searchParams.append("type", params.type);
+    if (params.status) searchParams.append("status", params.status);
+    if (params.year) searchParams.append("year", params.year);
+    searchParams.append("page", (params.page || 1).toString());
 
     const url = `/search?${searchParams.toString()}`;
     const $ = await httpClient.fetchPage(url);
-    
+
     if (!$) {
-      throw new Error('Failed to perform advanced search');
+      throw new Error("Failed to perform advanced search");
     }
 
     const results = MangaExtractor.extractMangaCards($);
-    const totalPages = parseInt($('.pagination a').last().text() || '1');
+    const totalPages = parseInt($(".pagination a").last().text() || "1");
 
     return {
       results,
       currentPage: params.page || 1,
-      totalPages: totalPages || undefined
+      totalPages: totalPages || undefined,
     };
   }
 
@@ -357,7 +376,7 @@ export class ScraperService {
    */
   clearCache() {
     httpClient.clearCache();
-    logger.info('Cache cleared');
+    logger.info("Cache cleared");
   }
 }
 
