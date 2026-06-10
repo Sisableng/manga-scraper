@@ -121,7 +121,6 @@ export class MangaExtractor {
     $("label").each((_, elem) => {
       const labelText = $(elem).text().trim();
       if (labelText.toLowerCase() === label.toLowerCase()) {
-        // Value ada di sibling div berikutnya
         const sibling = $(elem).next("div");
         if (sibling.length) {
           value = sibling.text().trim();
