@@ -118,13 +118,15 @@ export class MangaExtractor {
   ): string | undefined {
     let value: string | undefined;
 
-    $("div, span, p, td, th").each((_, elem) => {
-      const text = $(elem).text();
-      const regex = new RegExp(`${label}\\s*:?\\s*([^\\n]+)`, "i");
-      const match = text.match(regex);
-      if (match) {
-        value = match[1].trim();
-        return false; // break
+    $("label").each((_, elem) => {
+      const labelText = $(elem).text().trim();
+      if (labelText.toLowerCase() === label.toLowerCase()) {
+        // Value ada di sibling div berikutnya
+        const sibling = $(elem).next("div");
+        if (sibling.length) {
+          value = sibling.text().trim();
+          return false; // break
+        }
       }
     });
 
