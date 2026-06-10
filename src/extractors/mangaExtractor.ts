@@ -48,6 +48,46 @@ export class MangaExtractor {
   }
 
   /**
+   * Extract manga card information from a grid item
+   */
+  static extractMangaCardFromItem(
+    $: cheerio.CheerioAPI,
+    item: cheerio.Cheerio<Element>,
+  ): MangaCard | null {
+    try {
+      const href = item.find('a[href*="/manga/"]').first().attr("href");
+      if (!href) return null;
+
+      const id = href.match(/\/manga\/(\d+)\//)?.[1];
+      if (!id) return null;
+
+      const img = item.find("img");
+      const imageUrl = img.attr("src") || img.attr("data-src");
+
+      const title = item.find(".line-clamp-2").text().trim();
+      if (!title) return null;
+
+      const infoText = item.find(".flex-wrap").text();
+      const type = infoText.match(/manga|manhwa|manhua/i)?.[0];
+      const year = infoText.match(/\d{4}/)?.[0];
+      const status = infoText.match(/publishing|finished/i)?.[0];
+
+      return {
+        id,
+        title,
+        url: config.baseURL + href,
+        imageUrl,
+        type,
+        year,
+        status,
+      };
+    } catch (error) {
+      console.error("Error extracting manga card from item:", error);
+      return null;
+    }
+  }
+
+  /**
    * Extract multiple manga cards from a container
    */
   static extractMangaCards(

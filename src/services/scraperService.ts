@@ -87,13 +87,11 @@ export class ScraperService {
     $("h4").each((_, elem) => {
       const text = $(elem).text();
       if (text.includes("Trending")) {
-        const container = $(elem).next();
-        const extracted = MangaExtractor.extractMangaCards(
-          $,
-          'a[href*="/manga/"]',
-          container,
-        );
-        manga.push(...extracted);
+        const container = $(elem).closest(".container").find(".grid");
+        container.children("div").each((_, itemElem) => {
+          const card = MangaExtractor.extractMangaCardFromItem($, $(itemElem));
+          if (card) manga.push(card);
+        });
       }
     });
 

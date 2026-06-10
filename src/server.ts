@@ -113,27 +113,34 @@ app.use(errorHandler);
 // SERVER START
 // ============================================================================
 
-const PORT = config.port;
+if (process.env.NETLIFY !== "true") {
+  const PORT = config.port;
 
-app.listen(PORT, () => {
-  logger.info("╔════════════════════════════════════════════════════════════╗");
-  logger.info("║  MangaPill API Scraper v2.0                                ║");
-  logger.info("╠════════════════════════════════════════════════════════════╣");
-  logger.info(`║  Server:        http://localhost:${PORT}` + "║".padStart(23));
-  logger.info(
-    `║  Documentation: http://localhost:${PORT}/api/docs` + "║".padStart(14),
-  );
-  logger.info(
-    `║  Health:        http://localhost:${PORT}/health` + "║".padStart(16),
-  );
-  logger.info(`║  Environment:   ${config.nodeEnv.padEnd(43)}║`);
-  logger.info("╚════════════════════════════════════════════════════════════╝");
-  logger.info("");
-  logger.info("✓ Server is ready to accept connections");
-  logger.info("✓ Cache system enabled");
-  logger.info("✓ Rate limiting active");
-  logger.info("");
-});
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+  });
+}
+
+// app.listen(PORT, () => {
+//   logger.info("╔════════════════════════════════════════════════════════════╗");
+//   logger.info("║  MangaPill API Scraper v2.0                                ║");
+//   logger.info("╠════════════════════════════════════════════════════════════╣");
+//   logger.info(`║  Server:        http://localhost:${PORT}` + "║".padStart(23));
+//   logger.info(
+//     `║  Documentation: http://localhost:${PORT}/api/docs` + "║".padStart(14),
+//   );
+//   logger.info(
+//     `║  Health:        http://localhost:${PORT}/health` + "║".padStart(16),
+//   );
+//   logger.info(`║  Environment:   ${config.nodeEnv.padEnd(43)}║`);
+//   logger.info("╚════════════════════════════════════════════════════════════╝");
+//   logger.info("");
+//   logger.info("✓ Server is ready to accept connections");
+//   logger.info("✓ Cache system enabled");
+//   logger.info("✓ Rate limiting active");
+//   logger.info("");
+// });
+//
 
 // Graceful shutdown
 process.on("SIGTERM", () => {

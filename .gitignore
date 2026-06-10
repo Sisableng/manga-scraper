@@ -38,3 +38,6 @@ coverage/
 *.pid
 *.seed
 *.pid.lock
+
+# Local Netlify folder
+.netlify
