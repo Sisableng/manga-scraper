@@ -48,7 +48,7 @@ export class MangaExtractor {
   }
 
   /**
-   * Extract manga card information from a grid item
+   * Extract manga card from a single item div that contains split <a> tags
    */
   static extractMangaCardFromItem(
     $: cheerio.CheerioAPI,
@@ -61,30 +61,59 @@ export class MangaExtractor {
       const id = href.match(/\/manga\/(\d+)\//)?.[1];
       if (!id) return null;
 
-      const img = item.find("img");
+      const img = item.find("img").first();
       const imageUrl = img.attr("src") || img.attr("data-src");
 
-      const title = item.find(".line-clamp-2").text().trim();
+      const title = item.find(".line-clamp-2").first().text().trim();
+      const description = item.find(".line-clamp-2").next().text().trim();
       if (!title) return null;
 
-      const infoText = item.find(".flex-wrap").text();
-      const type = infoText.match(/manga|manhwa|manhua/i)?.[0];
-      const year = infoText.match(/\d{4}/)?.[0];
-      const status = infoText.match(/publishing|finished/i)?.[0];
+      // Type, year, status are in colored badge divs (bg-purple, bg-orange, bg-green)
+      const type = item.find('[class*="bg-purple"]').text().trim() || undefined;
+      const year = item.find('[class*="bg-orange"]').text().trim() || undefined;
+      const status =
+        item.find('[class*="bg-green"]').text().trim() || undefined;
+
+      // Genres are in bg-card badge divs (second flex-wrap group)
+      const genreContainer = item.find(".flex-wrap").last();
+      const genres: string[] = [];
+      genreContainer.find("div").each((_, el) => {
+        const genre = $(el).text().trim();
+        if (genre) genres.push(genre);
+      });
 
       return {
         id,
         title,
         url: config.baseURL + href,
+        description,
         imageUrl,
         type,
         year,
         status,
+        genres: genres.length > 0 ? genres : undefined,
       };
     } catch (error) {
       console.error("Error extracting manga card from item:", error);
       return null;
     }
+  }
+
+  /**
+   * Extract manga cards by iterating direct child divs of a grid container
+   */
+  static extractMangaCardsFromGrid(
+    $: cheerio.CheerioAPI,
+    container: cheerio.Cheerio<Element>,
+  ): MangaCard[] {
+    const cards: MangaCard[] = [];
+
+    container.children("div").each((_, elem) => {
+      const card = this.extractMangaCardFromItem($, $(elem as Element));
+      if (card) cards.push(card);
+    });
+
+    return cards;
   }
 
   /**

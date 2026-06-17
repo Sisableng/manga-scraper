@@ -18,6 +18,7 @@ export class ChapterExtractor {
       // Extract chapter number from URL
       const chapterMatch = href.match(/chapter-(\d+(?:\.\d+)?)/i);
       const chapterNumber = chapterMatch ? chapterMatch[1] : "Unknown";
+      const chapterId = href.match(/\/chapters\/(\d+)\//)?.[1];
 
       // Find manga link within or near the element
       let mangaLink = elem.find('a[href*="/manga/"]').first();
@@ -62,6 +63,7 @@ export class ChapterExtractor {
         .trim();
 
       return {
+        chapterId,
         chapterNumber,
         chapterUrl: config.baseURL + href,
         chapterTitle: chapterTitle || undefined,
@@ -78,19 +80,80 @@ export class ChapterExtractor {
   }
 
   /**
-   * Extract multiple chapter cards
+   * Extract a single chapter card from a container item element
+   */
+  static extractChapterCardFromItem(
+    $: cheerio.CheerioAPI,
+    item: cheerio.Cheerio<Element>,
+  ): ChapterCard | null {
+    try {
+      // Get chapter URL from the first chapter link (image link)
+      const chapterHref = item
+        .find('a[href*="/chapters/"]')
+        .first()
+        .attr("href");
+      if (!chapterHref) return null;
+
+      // Extract chapter number from URL
+      const chapterId = chapterHref.match(/\/chapters\/([\d-]+)\//)?.[1];
+      const chapterNumber = chapterHref.match(/chapter-(\d+)/)?.[1];
+      if (!chapterNumber) return null;
+
+      // Get manga URL and ID
+      const mangaHref = item.find('a[href*="/manga/"]').first().attr("href");
+      const mangaId = mangaHref?.match(/\/manga\/(\d+)\//)?.[1];
+
+      // Get image from the first <a> tag
+      const img = item.find("img").first();
+      const imageUrl = img.attr("src") || img.attr("data-src");
+
+      // Get chapter title (e.g. "#213")
+      const chapterTitle = item.find(".text-lg.font-black").text().trim();
+
+      // Get manga name
+      const mangaName = item
+        .find('a[href*="/manga/"] .line-clamp-2')
+        .text()
+        .trim();
+      const shortDesc = item
+        .find('a[href*="/manga/"] .line-clamp-2')
+        .next()
+        .text()
+        .trim();
+      const addedAt = item.find("time-ago").attr("datetime");
+
+      return {
+        chapterId,
+        chapterNumber,
+        chapterUrl: config.baseURL + chapterHref,
+        chapterTitle: chapterTitle || undefined,
+        mangaName: mangaName || "",
+        mangaId: mangaId || undefined,
+        mangaUrl: mangaHref ? config.baseURL + mangaHref : undefined,
+        imageUrl,
+        shortDesc,
+        addedAt,
+      };
+    } catch (error) {
+      console.error("Error extracting chapter card from item:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Extract multiple chapter cards from a container
    */
   static extractChapterCards(
     $: cheerio.CheerioAPI,
-    selector: string = 'a[href*="/chapters/"]',
     context?: cheerio.Cheerio<Element>,
   ): ChapterCard[] {
     const cards: ChapterCard[] = [];
 
-    const elements = context ? context.find(selector) : $(selector);
+    // Target direct child divs to avoid class-specific dependency
+    const elements = context ? context.children("div") : $("div");
 
     elements.each((_, elem) => {
-      const card = this.extractChapterCard($, $(elem as Element));
+      const card = this.extractChapterCardFromItem($, $(elem as Element));
       if (card) cards.push(card);
     });
 

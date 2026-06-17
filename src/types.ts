@@ -4,21 +4,26 @@ export interface MangaCard {
   id: string;
   title: string;
   url: string;
+  description?: string;
   imageUrl?: string;
   type?: string;
   year?: string;
   status?: string;
+  genres?: string[];
 }
 
 export interface ChapterCard {
   chapterNumber: string;
   chapterUrl: string;
+  chapterId?: string;
   chapterTitle?: string;
   mangaName: string;
   mangaId?: string;
   mangaUrl?: string;
   imageUrl?: string;
   releaseDate?: string;
+  shortDesc?: string;
+  addedAt?: string;
 }
 
 export interface MangaDetails {

@@ -44,11 +44,7 @@ export class ScraperService {
       const text = $(elem).text();
       if (text.includes("Featured")) {
         const container = $(elem).next();
-        const extracted = ChapterExtractor.extractChapterCards(
-          $,
-          'a[href*="/chapters/"]',
-          container,
-        );
+        const extracted = ChapterExtractor.extractChapterCards($, container);
         chapters.push(...extracted);
       }
     });
@@ -66,11 +62,7 @@ export class ScraperService {
       const text = $(elem).text();
       if (text.includes("New Chapters")) {
         const container = $(elem).next();
-        const extracted = ChapterExtractor.extractChapterCards(
-          $,
-          'a[href*="/chapters/"]',
-          container,
-        );
+        const extracted = ChapterExtractor.extractChapterCards($, container);
         chapters.push(...extracted);
       }
     });
@@ -281,7 +273,8 @@ export class ScraperService {
       throw new Error("Failed to fetch recent chapters");
     }
 
-    return ChapterExtractor.extractChapterCards($);
+    const container = $("div.grid");
+    return ChapterExtractor.extractChapterCards($, container);
   }
 
   /**
@@ -332,7 +325,7 @@ export class ScraperService {
     status?: string;
     year?: string;
     page?: number;
-  }): Promise<SearchResult> {
+  }): Promise<SearchResult & { elem?: string[] }> {
     logger.info("Performing advanced search", params);
 
     const searchParams = new URLSearchParams();
@@ -352,7 +345,9 @@ export class ScraperService {
       throw new Error("Failed to perform advanced search");
     }
 
-    const results = MangaExtractor.extractMangaCards($);
+    // Target the grid container, then iterate direct child divs
+    const grid = $(".my-3.grid.justify-end").first();
+    const results = MangaExtractor.extractMangaCardsFromGrid($, grid);
     const totalPages = parseInt($(".pagination a").last().text() || "1");
 
     return {
